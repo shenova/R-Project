@@ -1,0 +1,108 @@
+---
+title: "Project doc"
+author: "Shenova Davis"
+format: revealjs
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## First Load the Necessary Data and Packages
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(olsrr)
+library(DataExplorer)
+bike = read_csv("bikeshare-day.csv")
+```
+
+# Feature Engineering
+
+## Feature Engineering
+
+- the process of creating new features from existing ones. 
+
+
+## Set Missing
+
+- One method associated with this concept in the set_missing method. Through this, we can input a certain value for any missing values in the data set. 
+
+In the following example, we can take a dataframe that has NA values and replace them with a 0 or "unknown".
+
+```{r}
+df <- data.frame(
+  Number = c(1, 2, NA, 4, 5),
+  Letter = c("A", "B", "C", NA, "E"),
+  Month = c("January", "November", "April", "November", "March")
+)
+
+df
+```
+
+```{r}
+miss_df <- set_missing(df, list(0, "unknown"))
+miss_df
+```
+
+## Group Category
+- Another method in data explorer is the group category method. This allows us to combine discrete variables in a column and display their frequency in the data set. 
+
+- In this example, we can see how the variables in the "Month" column are grouped together and then the frequency is plotted. 
+```{r}
+group_category(data = df, feature = "Month", threshold = 0.2)
+ggplot(df, mapping = aes(y = Month))+
+  geom_bar()+
+  labs(
+    title = "Month Frequency",
+    x = "Count",
+    y = "Month"
+  )
+```
+
+## One Hot Encoding (using Dummify)
+- We can also use Data Explorer to do One Hot Encoding using the dummify feature. This will allow us to do computations with discrete variables and turn them into binary data. 
+- Note that the maxcat variable will not be run if there are more variables than the maxcat value 
+
+```{r}
+plot_str(
+  list(
+    "original" = df,
+    "dummified" = dummify(df, maxcat = 5)
+  )
+)
+```
+
+## Drop Features
+
+- Data explorer also has a drop features method that allows us to drop a column of a data set if we deem it unnecessary. 
+
+- Using the bike data set, we can drop the "cnt" column. 
+```{r}
+## Original Data Set
+bike
+```
+
+```{r}
+## After dropping "cnt" column 
+bike_no_cnt <- drop_columns(bike, c("cnt"))
+bike_no_cnt
+```
+
+## Update Features
+
+- Lastly, we can update the columns of a data frame using the update_columns() feature.
+
+- It's inputs are 
+  - data: the dataframe
+  - ind: the column name or position
+  - what: call a function or apply a method to the column
+
+- Let's take the log of all the values in the column "casual" of the original bike data set. 
+```{r}
+new_bike <- update_columns(bike, c("casual"), log)
+
+new_bike
+```
+

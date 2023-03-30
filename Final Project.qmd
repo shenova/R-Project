@@ -1,0 +1,373 @@
+---
+title: "Technical Presentation of DataExplorer"
+author: "Nathaniel Mackler, Shenova Davis,Ziwei Lin"
+date: "2023-03-22"
+format:
+  html: 
+    output-file: Technical Presentation of DataExplorer.html
+    embed-resources: true
+  revealjs:
+    output-file: Technical Presentation of DataExplorer.html
+    slide-number: true
+    chalkboard: false 
+    preview-links: auto
+    scrollable: true
+    embed-resources: true
+    execute:
+      echo: true
+      eval: true
+---
+
+[**DataExplorer**](https://cran.r-project.org/web/packages/DataExplorer/vignettes/dataexplorer-intro.html) is a package aim to automate create visualizations to show simple features of relation and help save time for the EDA process.[^1] For our purpose in this presentation, a lot of the information introduced on the package will be from the "cran.r-project" where the creator of the package introduce the functioning.[^2]
+
+[^1]: https://github.com/boxuancui/DataExplorer
+
+[^2]: https://cran.r-project.org/web/packages/DataExplorer/vignettes/dataexplorer-intro.html
+
+```{r}
+#| label: load-packages and dataset
+#| include: false
+install.packages("DataExplorer", repos = "http://cran.us.r-project.org")
+install.packages("olsrr", repos = "http://cran.us.r-project.org")
+install.packages("tidymodels", repos = "http://cran.us.r-project.org")
+install.packages("data.table", repos = "http://cran.us.r-project.org")
+library(tidyverse)
+library(DataExplorer)
+library(tidymodels)
+library(olsrr)
+library(data.table)
+bikeshare_day <- read_csv("bikeshare-day.csv")
+```
+
+## Data {.smaller}
+
+To begin the discussion, we want to use a dataset that we are familiar with from class to visually show how the DataExplorer package can be useful.
+
+At first, like what we did using glimpse(), DataExplorer could visually show a interactive network web of the variable name and type with the dataset size.
+
+```{r}
+plot_str(bikeshare_day)
+```
+
+This function could be a lot more helpful when comes to datasets with more than one dataset containing, thus the structure of relation can be better shown at once visually.
+
+From here, we can see that it shows a way more clearer diagram than what glimpse can give us, especially for beginner to r. It gives information in a more direct and clear visualization for datasets.
+
+## Exploratory Data Analysis {.smaller}
+
+One of the main advance function for the package is to automate some EDA graph that we may have taken a long time with using ggplot and following most of the effective data visualization tactics.
+
+```{r}
+introduce(bikeshare_day)
+```
+
+As what we want to know, this introduce() function shows rows, columns, the number of discrete/continuous columns that we may want to work with, and a lot of different kinds of ways for showing whether the dataset contains missing data that often requires caution to work with.
+
+```{r}
+plot_intro(bikeshare_day)
+```
+
+As a visualization package, it can also produce the information to a visual graph. -Percentage does not provide much help under this circumstance
+
+-but it clearly follow a lot of effective visualization
+
+To take a closer look at the missing data of a dataset according to each variable, it can do:
+
+```{r}
+plot_missing(bikeshare_day)
+```
+
+-The bikeshare_day data shows perfect of no missing data
+
+-but there has been time, in this class or on own investigation, we see missing data comes to troubleshoot
+
+-the band label may show in good, poor, or remove status. At remove status, it says that there are a majority of missing data in the column and you should consider to leave it out of the dataset or analysis
+
+## Bar Graph {.smaller}
+
+A bar graph is often used for discrete variables.
+
+```{r warning = FALSE}
+plot_bar(bikeshare_day, with = "registered", by = "workingday")
+```
+
+Without any selection, it made a kind of facet_wrap ggplot graph.
+
+-   two added features are with and by
+
+-   EDA is a section to get familiar with the data before we knows how we want the data to actually be looking at such variables such as season is not shown as discrete yet
+
+-   It self adjust the x axis according to the number it's receiving
+
+-   it does not have meaningful labels, column names, and theme setting
+
+## Histogram {.smaller}
+
+Histogram works its purpose with continuous variables
+
+```{r}
+plot_histogram(bikeshare_day)
+```
+
+-Some of the graph like mnth, season, weathersit, weekday, we can see does not look much as continuous
+
+## Boxplot {.smaller}
+
+```{r}
+plot_boxplot(bikeshare_day, by = "temp")
+```
+
+-   temp's relation with atemp is mostly linear
+-   the relation with some categorical data on the x axis is weird
+-   the relation with other continuous data can be meaningful and further analysis
+
+## Scatterplot {.smaller}
+
+Based on what we observed in boxplot, Scatterplot could be interest to further see the relationship:
+
+```{r}
+plot_scatterplot(bikeshare_day, by = "temp", sampled_rows = 100L)
+```
+
+-   proves that the relationship with categorical data on the x-axis is weird
+-   on page two: the relation of temp and atemp is linear. It seems to have positive correlation with registered, casual, cnt participants.
+
+## Other Visualizations {.smaller}
+
+There are other visualizations that **DataExplorer**:
+
+-   `plot_qq`: Quantile-Quantile plot - compare it with a line of normal distribution in order to assert whether it follows a specific probability distribution. It can be useful for checking the assumption of linear model. If the points significant deviation from the straight line, it suggests that the model assumptions may not be met, and further investigation is needed.
+
+-   `plot_correlation`: Correlation Heatmap
+
+-   `plot_prcomp`:Principal Component Analysis- explains variance in datasets with high number of dimensions/features per observation to help remove noise and redundancy.
+
+# Feature Engineering
+
+## Feature Engineering
+
+-   the process of creating new features from existing ones.
+
+## Set Missing
+
+-   One method associated with this concept in the set_missing method. Through this, we can input a certain value for any missing values in the data set.
+
+In the following example, we can take a dataframe that has NA values and replace them with a 0 or "unknown".
+
+```{r}
+df <- data.frame(
+  Number = c(1, 2, NA, 4, 5),
+  Letter = c("A", "B", "C", NA, "E"),
+  Month = c("January", "November", "April", "November", "March")
+)
+df
+```
+
+```{r}
+miss_df <- set_missing(df, list(0, "unknown"))
+miss_df
+```
+
+## Group Category
+
+-   Another method in data explorer is the group category method. This allows us to combine discrete variables in a column and display their frequency in the data set.
+
+-   In this example, we can see how the variables in the "Month" column are grouped together and then the frequency is plotted.
+
+```{r}
+group_category(data = df, feature = "Month", threshold = 0.2)
+ggplot(df, mapping = aes(y = Month))+
+  geom_bar()+
+  labs(
+    title = "Month Frequency",
+    x = "Count",
+    y = "Month"
+  )
+```
+
+## One Hot Encoding (using Dummify)
+
+-   We can also use Data Explorer to do One Hot Encoding using the dummify feature. This will allow us to do computations with discrete variables and turn them into binary data.
+-   Note that the maxcat variable will not be run if there are more variables than the maxcat value
+
+```{r}
+plot_str(
+  list(
+    "original" = df,
+    "dummified" = dummify(df, maxcat = 5)
+  )
+)
+```
+
+## Drop Features
+
+-   Data explorer also has a drop features method that allows us to drop a column of a data set if we deem it unnecessary.
+
+-   Using the bike data set, we can drop the "cnt" column.
+
+```{r}
+## Original Data Set
+bikeshare_day
+```
+
+```{r}
+## After dropping "cnt" column 
+bike_no_cnt <- drop_columns(bikeshare_day, c("cnt"))
+bike_no_cnt
+```
+
+## Update Features
+
+-   Lastly, we can update the columns of a data frame using the update_columns() feature.
+
+-   It's inputs are
+
+    -   data: the dataframe
+    -   ind: the column name or position
+    -   what: call a function or apply a method to the column
+
+-   Let's take the log of all the values in the column "casual" of the original bike data set.
+
+```{r}
+new_bike <- update_columns(bikeshare_day, c("casual"), log)
+new_bike
+```
+
+# Comparsion to manually doing it by tidyverse
+## Identifying Missing Data and Discrete/Continuous Columns
+
+```{r}
+#| echo: true
+#| output-location: slide
+# num_missing <- bikes |>
+#   summarize(num_missing = sum(is.na(.))) |>
+#   pull(num_missing)
+num_missing <- bikeshare_day %>%
+  summarize(num_missing = sum(is.na(.))) %>%
+  pull(num_missing)
+output <- data.table("Rows" = nrow(bikeshare_day),
+           "Columns" = ncol(bikeshare_day),
+           "Discrete Columns" = sum(is.factor(bikeshare_day) | is.character(bikeshare_day)),
+           "Continous Columns" = sum(is.numeric(bikeshare_day)),
+           "All missing columns" = sum(colSums(is.na(bikeshare_day)) > 0),
+           "Missing Observations" = num_missing,
+           "Complete Rows" = sum(complete.cases(bikeshare_day)),
+           "Total Observations" = nrow(bikeshare_day)*ncol(bikeshare_day) - num_missing,
+           "Memory allocation" = object.size(bikeshare_day)
+           )
+glimpse(output)
+```
+
+## All that extra effort and it still doesn't work! instead....
+
+```{r}
+#| echo: true
+output <- introduce(bikeshare_day)
+glimpse(output)
+```
+
+That's not a lot of code...
+
+## What about some graphs?
+
+Suppose we want to get an idea for how each feature in our data is distributed? One way to accomplish this would be by creating a histogram or bar chart (for continuous/discrete data) for each value in the data.
+
+```{r}
+#| echo: true
+#| output-location: slide
+cols_to_plot <- bikeshare_day  %>%
+  select_if(~n_distinct(.) < 3) %>%
+  names()
+df_long <- bikeshare_day %>%
+  pivot_longer(cols = cols_to_plot, names_to = "variable", values_to = "value")
+ggplot(df_long, aes(x = value)) +
+  geom_bar() +
+  facet_wrap(~variable, scales = "free") +
+  labs(title = "Bar Charts for Columns with < 3 Discrete Values")
+```
+
+## Data explorer makes it easy...
+
+```{r}
+#| echo: true
+plot_bar(bikeshare_day)
+```
+
+## Maybe histograms for continous variables will be easier than bar charts?
+
+```{r}
+#| echo: true
+#| output-location: slide
+df_cont <- bikeshare_day %>% 
+  select_if(is.numeric)
+# create a long format of the data
+df_long <- df_cont %>% 
+  tidyr::gather(variable, value)
+# create histogram using facet_wrap
+ggplot(df_long, aes(x = value)) +
+  geom_histogram() +
+  facet_wrap(~variable, scales = "free") +
+  labs(title = "Histogram of Continuous Variables")
+```
+
+## And Data Explorer's Solution is...
+
+```{r}
+#| echo: true
+plot_histogram(bikeshare_day)
+```
+
+## Is it perfect?
+
+-Weekday, season, and month aren't continuous values
+
+-Using feature/column names is tought to read
+
+-No axis labels
+
+### Does it matter?
+
+-What is the purpose of EDA?
+
+-Less time on EDA \> More time for good visualizations
+
+Plotting everything makes it harder to miss something obvious
+
+## And how about statistics?
+
+```{r}
+#| echo: true
+#| output-location: slide
+bike_num <- bikeshare_day |>
+  select_if(is.numeric)
+corr_mat <- cor(bike_num)
+ggplot(data = gather(as.data.frame(corr_mat), key = "variable", value = "correlation"), 
+       aes(x = variable, y = reorder(variable, correlation), fill = correlation)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "", y = "", fill = "Correlation") +
+  ggtitle("Correlation Heatmap")
+```
+
+## And how does Data Explorer do?
+
+```{r}
+#| echo: true
+plot_correlation(na.omit(bikeshare_day), maxcat = 5L)
+```
+
+## Limitations
+
+Can fail with large datasets
+
+Illegible error messages make it hard to fix issues
+
+Doesn't "understand" the data - can spit out nonsense that the data scientist must learn to correct
+
+## Conclusions
+
+Data Explorer is an excellent first step, but don't replace your judgement
+
+GPT-4 built into Excel is going to be AWESOME

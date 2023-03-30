@@ -1,0 +1,175 @@
+---
+title: "Doing It Manually"
+author: "Nathaniel Mackler"
+format: revealjs
+---
+
+## Loading the Data & Pkgs
+
+```{r}
+#| echo: true
+library(data.table)
+library(tidyverse)
+library(DataExplorer)
+bikes <- read.csv("bikeshare-day.csv")
+```
+
+## Identifying Missing Data and Discrete/Continuous Columns
+
+```{r}
+#| echo: true
+#| output-location: slide
+
+# num_missing <- bikes |>
+#   summarize(num_missing = sum(is.na(.))) |>
+#   pull(num_missing)
+
+num_missing <- bikes %>%
+  summarize(num_missing = sum(is.na(.))) %>%
+  pull(num_missing)
+
+output <- data.table("Rows" = nrow(bikes),
+           "Columns" = ncol(bikes),
+           "Discrete Columns" = sum(is.factor(bikes) | is.character(bikes)),
+           "Continous Columns" = sum(is.numeric(bikes)),
+           "All missing columns" = sum(colSums(is.na(bikes)) > 0),
+           "Missing Observations" = num_missing,
+           "Complete Rows" = sum(complete.cases(bikes)),
+           "Total Observations" = nrow(bikes)*ncol(bikes) - num_missing,
+           "Memory allocation" = object.size(bikes)
+           )
+glimpse(output)
+```
+
+
+## All that extra effort and it still doesn't work! instead....
+
+```{r}
+#| echo: true
+
+output <- introduce(bikes)
+glimpse(output)
+```
+
+That's not a lot of code...
+
+## What about some graphs?
+
+Suppose we want to get an idea for how each feature in our data is distributed? One way to accomplish this would be by creating a histogram or bar chart (for continuous/discrete data) for each value in the data. 
+
+```{r}
+#| echo: true
+#| output-location: slide
+
+cols_to_plot <- bikes  %>%
+  select_if(~n_distinct(.) < 3) %>%
+  names()
+
+df_long <- bikes %>%
+  pivot_longer(cols = cols_to_plot, names_to = "variable", values_to = "value")
+
+ggplot(df_long, aes(x = value)) +
+  geom_bar() +
+  facet_wrap(~variable, scales = "free") +
+  labs(title = "Bar Charts for Columns with < 3 Discrete Values")
+```
+
+
+## Data explorer makes it easy...
+
+```{r}
+#| echo: true
+
+plot_bar(bikes)
+```
+
+## Maybe histograms for continous variables will be easier than bar charts?
+
+```{r}
+#| echo: true
+#| output-location: slide
+
+df_cont <- bikes %>% 
+  select_if(is.numeric)
+
+# create a long format of the data
+df_long <- df_cont %>% 
+  tidyr::gather(variable, value)
+
+# create histogram using facet_wrap
+ggplot(df_long, aes(x = value)) +
+  geom_histogram() +
+  facet_wrap(~variable, scales = "free") +
+  labs(title = "Histogram of Continuous Variables")
+
+```
+
+
+## And Data Explorer's Solution is...
+
+```{r}
+#| echo: true
+
+plot_histogram(bikes)
+
+```
+
+## Is it perfect? 
+
+-Weekday, season, and month aren't continuous values
+
+-Using feature/column names is tought to read
+
+-No axis labels
+
+### Does it matter?
+
+-What is the purpose of EDA? 
+
+-Less time on EDA > More time for good visualizations
+
+Plotting everything makes it harder to miss something obvious
+
+## And how about statistics? 
+
+```{r}
+#| echo: true
+#| output-location: slide
+bike_num <- bikes |>
+  select_if(is.numeric)
+
+corr_mat <- cor(bike_num)
+
+ggplot(data = gather(as.data.frame(corr_mat), key = "variable", value = "correlation"), 
+       aes(x = variable, y = reorder(variable, correlation), fill = correlation)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "", y = "", fill = "Correlation") +
+  ggtitle("Correlation Heatmap")
+
+```
+
+## And how does Data Explorer do? 
+
+```{r}
+#| echo: true
+
+plot_correlation(na.omit(bikes), maxcat = 5L)
+
+```
+
+## Limitations
+
+Can fail with large datasets
+
+Illegible error messages make it hard to fix issues
+
+Doesn't "understand" the data - can spit out nonsense that the data scientist must learn to correct
+
+## Conclusions
+
+Data Explorer is an excellent first step, but don't replace your judgement 
+
+GPT-4 built into Excel is going to be AWESOME
